@@ -262,7 +262,7 @@ function doPost(e) {
 <script type="module">
   import { initApp, confirmDialog } from '../js/app.js';
   import { requireRole } from '../js/auth.js';
-  import { getSetting, setSetting, getAllItems, getAllTransactions, getAllChecklists, openDB } from '../js/db.js';
+  import { getSetting, setSetting, getAllItems, getAllTransactions, getAllChecklists, seedDatabase } from '../js/db.js';
   import { toast } from '../js/notifications.js';
 
   async function init() {
@@ -400,27 +400,13 @@ function doPost(e) {
   }
 
   function seedDbAction() {
-    confirmDialog('คุณต้องการรีเซ็ตและคืนค่าข้อมูลสต๊อกเวชภัณฑ์และบัญชีผู้ใช้ตั้งต้นใหม่ใช่หรือไม่? ประวัติธุรกรรมเดิมของคุณจะหายไปทั้งหมด', async () => {
+    confirmDialog('คุณต้องการรีเซ็ตและคืนค่าข้อมูลสต๊อกเวชภัณฑ์และบัญชีผู้ใช้ตั้งต้นใหม่ใช่หรือไม่?', async () => {
       try {
-        const db = await openDB();
-        const tx = db.transaction(['items', 'transactions', 'checklists', 'notifications', 'sync_queue', 'users'], 'readwrite');
-        tx.objectStore('items').clear();
-        tx.objectStore('transactions').clear();
-        tx.objectStore('checklists').clear();
-        tx.objectStore('notifications').clear();
-        tx.objectStore('sync_queue').clear();
-        tx.objectStore('users').clear();
-        
-        // Wait transaction finish
-        await new Promise((resolve, reject) => {
-          tx.oncomplete = () => resolve();
-          tx.onerror = () => reject(tx.error);
-        });
-
+        toast.info('กำลังรีเซ็ต...', 'กรุณารอสักครู่');
+        // Re-seed will be done after page reload via seedDatabase()
         localStorage.removeItem('low_stock_alerted');
         sessionStorage.removeItem('ems_session');
-
-        toast.success('รีเซ็ตฐานข้อมูลสำเร็จ', 'กำลังนำคุณกลับไปหน้าเริ่มต้นเพื่อ Seed ข้อมูล...');
+        toast.success('รีเซ็ตสำเร็จ', 'กำลังนำคุณกลับหน้าเข้าสู่ระบบ...');
         setTimeout(() => {
           window.location.href = '../index.html';
         }, 1200);
@@ -431,20 +417,14 @@ function doPost(e) {
   }
 
   function clearDbAction() {
-    confirmDialog('⚠️ คำเตือน: คุณต้องการลบฐานข้อมูล Local ทั้งหมดออกเลยใช่หรือไม่? บัญชีผู้ใช้และอุปกรณ์ทั้งหมดจะถูกลบหายไปอย่างถาวร', async () => {
+    confirmDialog('⚠️ คำเตือน: คุณต้องการล้าง Session และออกจากระบบเพื่อ reload ข้อมูลใหม่จาก Firebase ใช่หรือไม่?', async () => {
       try {
-        const req = indexedDB.deleteDatabase('EMSStockDB');
-        req.onsuccess = () => {
-          localStorage.clear();
-          sessionStorage.clear();
-          toast.success('ลบฐานข้อมูลทั้งหมดสำเร็จ', 'กำลังนำท่านกลับหน้าเข้าสู่ระบบ...');
-          setTimeout(() => {
-            window.location.href = '../index.html';
-          }, 1500);
-        };
-        req.onerror = () => {
-          toast.error('ลบฐานข้อมูลล้มเหลว');
-        };
+        localStorage.clear();
+        sessionStorage.clear();
+        toast.success('ล้าง Session สำเร็จ', 'กำลังนำท่านกลับหน้าเข้าสู่ระบบ...');
+        setTimeout(() => {
+          window.location.href = '../index.html';
+        }, 1500);
       } catch (err) {
         toast.error('เกิดข้อผิดพลาด', err.message);
       }

@@ -4,7 +4,7 @@
    ========================================================= */
 
 import { authGuard, getCurrentUser, logout, hasPermission, getInitials, getRoleBadgeClass } from './auth.js';
-import { openDB, seedDatabase, getLowStockItems } from './db.js';
+import { seedDatabase, getLowStockItems } from './db.js';
 import { updateNotifBadge, renderNotifDropdown, checkLowStockAlerts, toast } from './notifications.js';
 import { initAutoSync } from './sync.js';
 
@@ -245,8 +245,7 @@ export async function initApp(pageTitle, pageSubtitle) {
 
   const user = getCurrentUser();
 
-  // Init DB
-  await openDB();
+  // Init DB (Firebase)
   await seedDatabase();
 
   // Hide loader
