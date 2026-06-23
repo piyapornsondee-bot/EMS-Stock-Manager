@@ -371,3 +371,12 @@ export async function dbPut(colName, data) {
     return docRef.id;
   }
 }
+
+export async function dbAdd(colName, data) {
+  const docRef = await addDoc(collection(db, colName), data);
+  return docRef.id;
+}
+
+export async function openDB() {
+  return Promise.resolve();
+}
