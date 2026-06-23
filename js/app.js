@@ -32,7 +32,7 @@ const NAV_ITEMS = [
   { id: 'transactions', label: 'ประวัติการทำรายการ',   icon: 'receipt_long',     href: 'transactions.html', permission: 'view_inventory' },
   { id: 'reports',      label: 'รายงาน',              icon: 'bar_chart',        href: 'reports.html',      permission: 'view_reports' },
   { id: 'users',        label: 'จัดการผู้ใช้',          icon: 'manage_accounts',  href: 'users.html',        permission: 'manage_users' },
-  { id: 'settings',     label: 'ตั้งค่า',              icon: 'settings',         href: 'settings.html',     permission: null },
+  { id: 'settings',     label: 'ตั้งค่า',              icon: 'settings',         href: 'settings.html',     permission: 'manage_users' },
 ];
 
 /* ── Render sidebar ── */
@@ -122,9 +122,11 @@ function showUserMenu(user) {
       <span class="badge ${getRoleBadgeClass(user.role)}" style="margin-top:8px;">${user.role}</span>
     </div>
     <div style="padding:6px 0;">
+      ${user.role === 'Administrator' ? `
       <div class="dropdown-item" onclick="window.location.href='settings.html'">
         <span class="material-symbols-rounded">settings</span> ตั้งค่า
       </div>
+      ` : ''}
       <div class="dropdown-item danger" id="logout-btn">
         <span class="material-symbols-rounded">logout</span> ออกจากระบบ
       </div>
