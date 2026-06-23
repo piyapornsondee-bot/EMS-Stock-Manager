@@ -24,16 +24,36 @@ export async function openScanner(onResult, onClose) {
   container.classList.add('active');
   _scanning = true;
 
-  // Use ZXing if available
-  if (window.ZXing) {
-    await startZXingScanner(video);
-  } else {
-    // Fallback: manual barcode input
-    showManualFallback();
+  try {
+    // Request back camera with environment constraint (forces autofocus wide camera on iOS)
+    _stream = await navigator.mediaDevices.getUserMedia({
+      video: { 
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    });
+
+    // Use ZXing if available
+    if (window.ZXing) {
+      await startZXingScanner(_stream, video);
+    } else {
+      // Fallback if no ZXing: show manual input and camera preview
+      video.srcObject = _stream;
+      await video.play();
+      showManualFallback();
+    }
+  } catch (err) {
+    console.warn('Camera access error:', err);
+    if (err.name === 'NotAllowedError' || err.message?.includes('Permission denied')) {
+      showManualFallback('ไม่ได้รับอนุญาตใช้กล้อง กรุณาป้อนบาร์โค้ดด้วยตนเอง');
+    } else {
+      showManualFallback('ไม่สามารถเปิดกล้องได้ กรุณาป้อนบาร์โค้ดด้วยตนเอง');
+    }
   }
 }
 
-async function startZXingScanner(video) {
+async function startZXingScanner(stream, video) {
   try {
     const hints = new Map();
     const formats = [
@@ -49,43 +69,26 @@ async function startZXingScanner(video) {
 
     _reader = new ZXing.BrowserMultiFormatReader(hints);
     
-    // Auto-detect back/environment camera if possible
-    let selectedDeviceId = undefined;
-    try {
-      const devices = await _reader.listVideoInputDevices();
-      if (devices && devices.length > 0) {
-        const backCamera = devices.find(d => 
-          d.label.toLowerCase().includes('back') || 
-          d.label.toLowerCase().includes('environment') ||
-          d.label.toLowerCase().includes('rear') ||
-          d.label.toLowerCase().includes('กล้องหลัง')
-        );
-        if (backCamera) {
-          selectedDeviceId = backCamera.deviceId;
-        } else {
-          // Default to the last device which is usually the back camera on mobile
-          selectedDeviceId = devices[devices.length - 1].deviceId;
-        }
-      }
-    } catch (e) {
-      console.warn('Could not list video devices:', e);
-    }
-
-    await _reader.decodeFromVideoDevice(selectedDeviceId, video, (result, err) => {
+    const decodeCallback = (result, err) => {
       if (result && _scanning) {
         const code = result.getText();
         _scanning = false;
         closeScanner();
         if (_onResult) _onResult(code);
       }
-    });
+    };
+
+    // Use decodeFromStream if available, otherwise fallback to decodeFromVideoElement
+    if (typeof _reader.decodeFromStream === 'function') {
+      await _reader.decodeFromStream(stream, video, decodeCallback);
+    } else {
+      video.srcObject = stream;
+      await video.play();
+      await _reader.decodeFromVideoElement(video, decodeCallback);
+    }
   } catch (err) {
     console.warn('ZXing error:', err);
-    if (err.name === 'NotAllowedError' || err.message?.includes('Permission denied')) {
-      showManualFallback('ไม่ได้รับอนุญาตใช้กล้อง กรุณาป้อนบาร์โค้ดด้วยตนเอง');
-    } else {
-      showManualFallback('ไม่สามารถเปิดกล้องได้ กรุณาป้อนบาร์โค้ดด้วยตนเอง');
-    }
+    showManualFallback();
   }
 }
 
