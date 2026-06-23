@@ -247,26 +247,49 @@ export async function initApp(pageTitle, pageSubtitle) {
 
   const loader = document.getElementById('page-loader');
 
-  // Hide loader quickly — seed runs in background
+  // Hide loader immediately — everything loads in background
   if (loader) {
-    setTimeout(() => loader.classList.add('hidden'), 800);
+    setTimeout(() => loader.classList.add('hidden'), 500);
   }
 
-  // Low stock count (best-effort, don't block UI)
-  let lowItems = [], lowCount = 0;
-  try {
-    lowItems = await getLowStockItems();
-    lowCount = lowItems.length;
-  } catch (e) {
-    console.warn('getLowStockItems failed:', e);
-  }
-
-  // Render shell immediately
-  renderSidebar(user, lowCount);
+  // Render shell immediately with 0 low stock (will update in background)
+  renderSidebar(user, 0);
   renderTopbar(pageTitle, pageSubtitle);
 
-  // Run seed and notifications in background (non-blocking)
-  seedDatabase().catch(err => console.warn('seedDatabase background error:', err));
+  // All Firebase operations run in background — never block UI
+  (async () => {
+    try {
+      await seedDatabase();
+    } catch (e) {
+      console.warn('seedDatabase:', e.message);
+    }
+    try {
+      await updateNotifBadge();
+    } catch (e) {
+      console.warn('updateNotifBadge:', e.message);
+    }
+    try {
+      await checkLowStockAlerts();
+    } catch (e) {
+      console.warn('checkLowStockAlerts:', e.message);
+    }
+    // Refresh sidebar badge after data loads
+    try {
+      const lowItems = await getLowStockItems();
+      const badge = document.querySelector('.nav-item[id="nav-inventory"] .nav-badge');
+      if (lowItems.length > 0 && !badge) {
+        const navInv = document.getElementById('nav-inventory');
+        if (navInv) {
+          const b = document.createElement('span');
+          b.className = 'nav-badge';
+          b.textContent = lowItems.length;
+          navInv.appendChild(b);
+        }
+      }
+    } catch (e) {
+      console.warn('getLowStockItems:', e.message);
+    }
+  })();
 
   // Auto sync
   initAutoSync();
