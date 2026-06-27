@@ -188,6 +188,11 @@ function renderTopbar(title, subtitle) {
     <button class="topbar-burger" id="burger-btn" aria-label="Toggle Menu">
       <span class="material-symbols-rounded">menu</span>
     </button>
+    ${PAGE !== 'dashboard' ? `
+    <button class="topbar-icon-btn" onclick="window.history.back()" title="ย้อนกลับ" style="margin-right:8px;">
+      <span class="material-symbols-rounded">arrow_back</span>
+    </button>
+    ` : ''}
     <div class="topbar-title">
       ${title}
       ${subtitle ? `<span class="topbar-subtitle" style="margin-left:8px;font-size:13px;font-weight:400;">— ${subtitle}</span>` : ''}

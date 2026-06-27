@@ -385,14 +385,27 @@ function render() {
     return;
   }
 
+  let backBtnHtml = '';
+  if (catFilter) {
+    backBtnHtml = `
+      <div style="margin-bottom: 16px;">
+        <button class="btn btn-sm btn-outline" onclick="selectCategory('')">
+          <span class="material-symbols-rounded">arrow_back</span> ย้อนกลับไปหน้าหมวดหมู่
+        </button>
+      </div>
+    `;
+  }
+
   if (currentView === 'grid') {
     container.innerHTML = `
+      ${backBtnHtml}
       <div class="grid-auto stagger-children">
         ${filteredItems.map(item => renderItemCard(item)).join('')}
       </div>
     `;
   } else {
     container.innerHTML = `
+      ${backBtnHtml}
       <div class="table-wrapper">
         <table class="table">
           <thead>
