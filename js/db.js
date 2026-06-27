@@ -227,44 +227,133 @@ export async function getLowStockItems() {
 }
 
 /* ── Transaction Helpers ── */
+export async function getItemByBarcodeAndLocation(barcode, location) {
+  if (!barcode || !location) return null;
+  const q = query(
+    collection(db, 'items'),
+    where('barcode', '==', barcode),
+    where('location', '==', location)
+  );
+  const snapshot = await getDocs(q);
+  if (!snapshot.empty) {
+    const docSnap = snapshot.docs[0];
+    return { item_id: docSnap.id, ...docSnap.data() };
+  }
+  return null;
+}
+
 export async function addTransaction(txObj) {
   txObj.datetime = new Date().toISOString();
+  
+  let targetItemId = txObj.item_id;
+  let balanceAfter = 0;
+  let itemToNotify = null;
+
+  if (txObj.transaction_type === 'Receive') {
+    // 1. Search for item with matching barcode and target location
+    let item = await getItemByBarcodeAndLocation(txObj.barcode, txObj.location);
+    if (item) {
+      item.current_stock += Number(txObj.quantity);
+      item.updated_date = txObj.datetime;
+      await saveItem(item);
+      targetItemId = item.item_id;
+      balanceAfter = item.current_stock;
+      itemToNotify = item;
+    } else {
+      // Create a new item record at the target location using original item as template
+      const originalItem = await getItemById(txObj.item_id);
+      if (originalItem) {
+        const newItem = {
+          ...originalItem,
+          location: txObj.location,
+          current_stock: Number(txObj.quantity),
+          created_date: txObj.datetime,
+          updated_date: txObj.datetime
+        };
+        delete newItem.item_id;
+        const newId = await saveItem(newItem);
+        targetItemId = newId;
+        balanceAfter = Number(txObj.quantity);
+        newItem.item_id = newId;
+        itemToNotify = newItem;
+      }
+    }
+  } else if (txObj.transaction_type === 'Issue') {
+    // Search for item with matching barcode and source location
+    let item = await getItemByBarcodeAndLocation(txObj.barcode, txObj.location);
+    if (item) {
+      item.current_stock -= Number(txObj.quantity);
+      if (item.current_stock < 0) item.current_stock = 0;
+      item.updated_date = txObj.datetime;
+      await saveItem(item);
+      targetItemId = item.item_id;
+      balanceAfter = item.current_stock;
+      itemToNotify = item;
+    }
+  } else if (txObj.transaction_type === 'Adjust') {
+    let item = await getItemById(txObj.item_id);
+    if (item) {
+      item.current_stock += Number(txObj.quantity);
+      if (item.current_stock < 0) item.current_stock = 0;
+      item.updated_date = txObj.datetime;
+      await saveItem(item);
+      targetItemId = item.item_id;
+      balanceAfter = item.current_stock;
+      itemToNotify = item;
+    }
+  } else if (txObj.transaction_type === 'Transfer') {
+    // 1. Deduct from source item
+    let sourceItem = await getItemByBarcodeAndLocation(txObj.barcode, txObj.location);
+    if (sourceItem) {
+      sourceItem.current_stock -= Number(txObj.quantity);
+      if (sourceItem.current_stock < 0) sourceItem.current_stock = 0;
+      sourceItem.updated_date = txObj.datetime;
+      await saveItem(sourceItem);
+      itemToNotify = sourceItem; // check low stock on source too
+    }
+
+    // 2. Add to target item
+    let targetItem = await getItemByBarcodeAndLocation(txObj.barcode, txObj.target_location);
+    if (targetItem) {
+      targetItem.current_stock += Number(txObj.quantity);
+      targetItem.updated_date = txObj.datetime;
+      await saveItem(targetItem);
+      targetItemId = targetItem.item_id;
+      balanceAfter = targetItem.current_stock;
+    } else {
+      // Create new copy of the item at target location
+      if (sourceItem) {
+        const newItem = {
+          ...sourceItem,
+          location: txObj.target_location,
+          current_stock: Number(txObj.quantity),
+          created_date: txObj.datetime,
+          updated_date: txObj.datetime
+        };
+        delete newItem.item_id;
+        const newId = await saveItem(newItem);
+        targetItemId = newId;
+        balanceAfter = Number(txObj.quantity);
+      }
+    }
+  }
+
+  // Update txObj properties before saving transaction
+  txObj.item_id = targetItemId;
+  txObj.balance_after_transaction = balanceAfter;
+
   const docRef = await addDoc(collection(db, 'transactions'), txObj);
   const id = docRef.id;
 
-  // Update item stock
-  const item = await getItemById(txObj.item_id);
-  if (item) {
-    if (txObj.transaction_type === 'Receive') {
-      item.current_stock += Number(txObj.quantity);
-    } else if (txObj.transaction_type === 'Issue') {
-      item.current_stock -= Number(txObj.quantity);
-      if (item.current_stock < 0) item.current_stock = 0;
-    } else if (txObj.transaction_type === 'Adjust') {
-      item.current_stock += Number(txObj.quantity);
-      if (item.current_stock < 0) item.current_stock = 0;
-    }
-    if (txObj.location) {
-      item.location = txObj.location;
-    }
-    txObj.balance_after_transaction = item.current_stock;
-    item.updated_date = txObj.datetime;
-    
-    // Save transaction balance
-    await setDoc(doc(db, 'transactions', id), { balance_after_transaction: item.current_stock }, { merge: true });
-    
-    await saveItem(item);
-
-    // Check low stock
-    if (item.current_stock <= item.minimum_stock) {
-      await addDoc(collection(db, 'notifications'), {
-        item_id: item.item_id,
-        notification_type: 'low_stock',
-        message: `${item.item_name} มีสต๊อกต่ำ: ${item.current_stock} ${item.unit} (ขั้นต่ำ: ${item.minimum_stock})`,
-        datetime: txObj.datetime,
-        status: 'unread',
-      });
-    }
+  // Check low stock notifications
+  if (itemToNotify && itemToNotify.current_stock <= itemToNotify.minimum_stock) {
+    await addDoc(collection(db, 'notifications'), {
+      item_id: itemToNotify.item_id,
+      notification_type: 'low_stock',
+      message: `${itemToNotify.item_name} (${itemToNotify.location}) มีสต๊อกต่ำ: ${itemToNotify.current_stock} ${itemToNotify.unit} (ขั้นต่ำ: ${itemToNotify.minimum_stock})`,
+      datetime: txObj.datetime,
+      status: 'unread',
+    });
   }
 
   // Queue for Google Sheets sync

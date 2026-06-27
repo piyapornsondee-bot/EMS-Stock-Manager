@@ -108,13 +108,14 @@
                 <div style="display:flex;flex-direction:column;gap:16px;">
                    <div class="form-group">
                      <label class="form-label">สถานที่จัดเก็บปลายทาง <span class="required">*</span></label>
-                     <select id="recv-location" class="form-control" onchange="toggleCustomLocation(this.value)">
-                       <option value="">-- เลือกสถานที่ --</option>
-                       <option value="ห้องเก็บของ EMS">🏠 ห้องเก็บของ EMS</option>
-                       <option value="บ้านเมิร์ส">🏡 บ้านเมิร์ส</option>
-                       <option value="__other__">📍 อื่นๆ (ระบุเพิ่ม)</option>
-                     </select>
-                     <input type="text" id="recv-location-custom" class="form-control" placeholder="ระบุสถานที่..." style="margin-top:8px;display:none;" />
+                      <select id="recv-location" class="form-control" onchange="toggleCustomLocation(this.value); updateLocationStock(this.value)">
+                        <option value="">-- เลือกสถานที่ --</option>
+                        <option value="ห้องเก็บของ EMS">🏠 ห้องเก็บของ EMS</option>
+                        <option value="บ้านเมิร์ส">🏡 บ้านเมิร์ส</option>
+                        <option value="__other__">📍 อื่นๆ (ระบุเพิ่ม)</option>
+                      </select>
+                      <input type="text" id="recv-location-custom" class="form-control" placeholder="ระบุสถานที่..." style="margin-top:8px;display:none;" />
+                      <div class="form-text" id="recv-location-stock" style="margin-top:6px;font-weight:600;color:var(--text-secondary);"></div>
                    </div>
                    <div class="form-group">
                      <label class="form-label">จำนวนที่รับเข้า <span class="required">*</span></label>
@@ -191,6 +192,30 @@ async function init() {
       if (val !== '__other__') customInput.value = '';
     }
   };
+
+  window.updateLocationStock = async function(loc) {
+    const customVal = document.getElementById('recv-location-custom')?.value.trim() || '';
+    const actualLoc = loc === '__other__' ? customVal : loc;
+    const stockDiv = document.getElementById('recv-location-stock');
+    if (!stockDiv || !selectedItem) return;
+
+    if (!actualLoc) {
+      stockDiv.textContent = '';
+      return;
+    }
+
+    const items = await getAllItems();
+    const match = items.find(i => i.barcode === selectedItem.barcode && i.location === actualLoc);
+    if (match) {
+      stockDiv.innerHTML = `สต๊อกปัจจุบันในคลังนี้: <strong style="color:var(--color-primary);">${match.current_stock}</strong> ${selectedItem.unit}`;
+    } else {
+      stockDiv.innerHTML = `<span style="color:var(--text-muted);">ยังไม่มีรายการนี้ในคลังนี้ (สต๊อกเริ่มต้น: 0)</span>`;
+    }
+  };
+
+  document.getElementById('recv-location-custom')?.addEventListener('input', () => {
+    updateLocationStock('__other__');
+  });
 
   // Scan
   document.getElementById('scan-btn')?.addEventListener('click', () => {
@@ -295,6 +320,7 @@ function selectItem(item) {
         locCustom.style.display = 'none';
       }
     }
+    updateLocationStock(locSelect.value);
   }
   
   document.getElementById('recv-qty').focus();

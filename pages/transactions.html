@@ -53,6 +53,7 @@
               <option value="">ทุกประเภท</option>
               <option value="Receive">รับเข้า</option>
               <option value="Issue">จ่ายออก</option>
+              <option value="Transfer">โอนย้าย</option>
               <option value="Adjust">ปรับยอด</option>
             </select>
             <select id="filter-user" class="form-control" style="width:auto;min-width:160px;">
@@ -142,12 +143,14 @@ function applyFilters() {
   });
 
   // Stats
-  const totalReceive = filteredTx.filter(t => t.transaction_type === 'Receive').reduce((s,t) => s+(t.quantity||0), 0);
-  const totalIssue   = filteredTx.filter(t => t.transaction_type === 'Issue').reduce((s,t) => s+(t.quantity||0), 0);
+  const totalReceive  = filteredTx.filter(t => t.transaction_type === 'Receive').reduce((s,t) => s+(t.quantity||0), 0);
+  const totalIssue    = filteredTx.filter(t => t.transaction_type === 'Issue').reduce((s,t) => s+(t.quantity||0), 0);
+  const totalTransfer = filteredTx.filter(t => t.transaction_type === 'Transfer').reduce((s,t) => s+(t.quantity||0), 0);
   document.getElementById('tx-stats').innerHTML = `
     <span>รายการทั้งหมด: <strong>${filteredTx.length}</strong></span>
     <span style="color:var(--color-success);">รับเข้า: <strong>+${formatNumber(totalReceive)}</strong></span>
     <span style="color:var(--color-danger);">จ่ายออก: <strong>-${formatNumber(totalIssue)}</strong></span>
+    ${totalTransfer > 0 ? `<span style="color:var(--color-primary);">โอนย้าย: <strong>⇄${formatNumber(totalTransfer)}</strong></span>` : ''}
   `;
 
   currentPage = 1;
@@ -199,13 +202,18 @@ function renderTable() {
       </thead>
       <tbody>
         ${page.map(t => {
-          const isRecv = t.transaction_type === 'Receive';
-          const isIssue = t.transaction_type === 'Issue';
-          const item = allItems.find(i => i.item_id === t.item_id);
-          const typeLabel = isRecv ? 'รับเข้า' : isIssue ? 'จ่ายออก' : 'ปรับยอด';
-          const typeBadge = isRecv ? 'badge-success' : isIssue ? 'badge-danger' : 'badge-warning';
-          const qtyColor  = isRecv ? 'var(--color-success)' : isIssue ? 'var(--color-danger)' : '#F57F17';
-          const qtySign   = isRecv ? '+' : isIssue ? '-' : '±';
+          const isRecv     = t.transaction_type === 'Receive';
+          const isIssue    = t.transaction_type === 'Issue';
+          const isTransfer = t.transaction_type === 'Transfer';
+          const item = allItems.find(i => i.item_id === t.item_id) ||
+                       allItems.find(i => i.barcode === t.barcode);
+          const typeLabel = isRecv ? 'รับเข้า' : isIssue ? 'จ่ายออก' : isTransfer ? 'โอนย้าย' : 'ปรับยอด';
+          const typeBadge = isRecv ? 'badge-success' : isIssue ? 'badge-danger' : isTransfer ? 'badge-primary' : 'badge-warning';
+          const qtyColor  = isRecv ? 'var(--color-success)' : isIssue ? 'var(--color-danger)' : isTransfer ? 'var(--color-primary)' : '#F57F17';
+          const qtySign   = isRecv ? '+' : isIssue ? '-' : isTransfer ? '⇄' : '±';
+          const locationCell = isTransfer && t.target_location
+            ? `<div style="font-size:11px;">${getLocationBadge(t.location || '-')}</div><div style="font-size:10px;color:var(--text-muted);margin:2px 0;">→</div><div style="font-size:11px;">${getLocationBadge(t.target_location)}</div>`
+            : getLocationBadge(t.location || item?.location || '-');
           return `
             <tr>
               <td style="font-size:12px;white-space:nowrap;">${formatDateTime(t.datetime)}</td>
@@ -213,7 +221,7 @@ function renderTable() {
                 <div style="font-weight:600;font-size:12px;font-family:monospace;">${t.barcode || '-'}</div>
                 ${item ? `<div style="font-size:11px;color:var(--text-muted);">${item.item_name}</div>` : ''}
               </td>
-              <td>${getLocationBadge(t.location || item?.location || '-')}</td>
+              <td>${locationCell}</td>
               <td><span class="badge ${typeBadge}">${typeLabel}</span></td>
               <td style="text-align:right;font-weight:700;font-size:14px;color:${qtyColor};">${qtySign}${Math.abs(t.quantity||0)}</td>
               <td style="text-align:right;font-size:13px;color:var(--text-muted);">${t.balance_after_transaction ?? '-'}</td>
@@ -252,17 +260,19 @@ window.goPage = function(p) { currentPage = p; renderTable(); window.scrollTo(0,
 
 function doExport() {
   const data = filteredTx.map(t => {
-    const item = allItems.find(i => i.item_id === t.item_id);
+    const item = allItems.find(i => i.item_id === t.item_id) ||
+                 allItems.find(i => i.barcode === t.barcode);
     return {
-      'วันเวลา':         formatDateTime(t.datetime),
-      'บาร์โค้ด':        t.barcode || '',
-      'ชื่อพัสดุ':        item ? item.item_name : '',
-      'สถานที่':         t.location || item?.location || '',
-      'ประเภท':          t.transaction_type,
-      'จำนวน':           t.quantity,
-      'คงเหลือหลังรายการ': t.balance_after_transaction ?? '',
-      'ผู้ดำเนินการ':     t.user_name || '',
-      'หมายเหตุ':        t.remarks || '',
+      'วันเวลา':              formatDateTime(t.datetime),
+      'บาร์โค้ด':             t.barcode || '',
+      'ชื่อพัสดุ':             item ? item.item_name : '',
+      'สถานที่ต้นทาง':         t.location || item?.location || '',
+      'สถานที่ปลายทาง (โอนย้าย)': t.target_location || '',
+      'ประเภท':               t.transaction_type,
+      'จำนวน':                t.quantity,
+      'คงเหลือหลังรายการ':    t.balance_after_transaction ?? '',
+      'ผู้ดำเนินการ':          t.user_name || '',
+      'หมายเหตุ':             t.remarks || '',
     };
   });
   exportToExcel(data, `EMS_Transactions_${new Date().toISOString().split('T')[0]}.xlsx`, 'Transactions');
