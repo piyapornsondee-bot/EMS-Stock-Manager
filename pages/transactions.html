@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
@@ -83,7 +83,7 @@
 <div id="toast-container"></div>
 
 <script type="module">
-import { initApp, exportToExcel, formatNumber } from '../js/app.js';
+import { initApp, exportToExcel, formatNumber, getLocationBadge } from '../js/app.js';
 import { getAllTransactions, getAllItems } from '../js/db.js';
 import { toast, formatDateTime } from '../js/notifications.js';
 
@@ -189,6 +189,7 @@ function renderTable() {
         <tr>
           <th>วันเวลา</th>
           <th>บาร์โค้ด / ชื่อพัสดุ</th>
+          <th>สถานที่</th>
           <th>ประเภท</th>
           <th style="text-align:right;">จำนวน</th>
           <th style="text-align:right;">คงเหลือ</th>
@@ -212,6 +213,7 @@ function renderTable() {
                 <div style="font-weight:600;font-size:12px;font-family:monospace;">${t.barcode || '-'}</div>
                 ${item ? `<div style="font-size:11px;color:var(--text-muted);">${item.item_name}</div>` : ''}
               </td>
+              <td>${getLocationBadge(t.location || item?.location || '-')}</td>
               <td><span class="badge ${typeBadge}">${typeLabel}</span></td>
               <td style="text-align:right;font-weight:700;font-size:14px;color:${qtyColor};">${qtySign}${Math.abs(t.quantity||0)}</td>
               <td style="text-align:right;font-size:13px;color:var(--text-muted);">${t.balance_after_transaction ?? '-'}</td>
@@ -249,15 +251,20 @@ function renderPagination(totalPages) {
 window.goPage = function(p) { currentPage = p; renderTable(); window.scrollTo(0, 0); };
 
 function doExport() {
-  const data = filteredTx.map(t => ({
-    'วันเวลา':         formatDateTime(t.datetime),
-    'บาร์โค้ด':        t.barcode || '',
-    'ประเภท':          t.transaction_type,
-    'จำนวน':           t.quantity,
-    'คงเหลือหลังรายการ': t.balance_after_transaction ?? '',
-    'ผู้ดำเนินการ':     t.user_name || '',
-    'หมายเหตุ':        t.remarks || '',
-  }));
+  const data = filteredTx.map(t => {
+    const item = allItems.find(i => i.item_id === t.item_id);
+    return {
+      'วันเวลา':         formatDateTime(t.datetime),
+      'บาร์โค้ด':        t.barcode || '',
+      'ชื่อพัสดุ':        item ? item.item_name : '',
+      'สถานที่':         t.location || item?.location || '',
+      'ประเภท':          t.transaction_type,
+      'จำนวน':           t.quantity,
+      'คงเหลือหลังรายการ': t.balance_after_transaction ?? '',
+      'ผู้ดำเนินการ':     t.user_name || '',
+      'หมายเหตุ':        t.remarks || '',
+    };
+  });
   exportToExcel(data, `EMS_Transactions_${new Date().toISOString().split('T')[0]}.xlsx`, 'Transactions');
 }
 

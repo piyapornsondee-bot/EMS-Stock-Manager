@@ -106,14 +106,20 @@
               </div>
               <div class="card-body">
                 <div style="display:flex;flex-direction:column;gap:16px;">
-                  <div class="form-group">
-                    <label class="form-label">จำนวนที่รับเข้า <span class="required">*</span></label>
-                    <div class="input-group">
-                      <span class="material-symbols-rounded input-icon">add_box</span>
-                      <input type="number" id="recv-qty" class="form-control" min="1" placeholder="0" style="font-size:20px;font-weight:700;" />
-                    </div>
-                    <div class="form-text">หน่วย: <span id="recv-unit">—</span></div>
-                  </div>
+                   <div class="form-group">
+                     <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                       <span>รับเข้าที่สถานที่จัดเก็บ:</span>
+                       <span id="recv-location-display"></span>
+                     </label>
+                   </div>
+                   <div class="form-group">
+                     <label class="form-label">จำนวนที่รับเข้า <span class="required">*</span></label>
+                     <div class="input-group">
+                       <span class="material-symbols-rounded input-icon">add_box</span>
+                       <input type="number" id="recv-qty" class="form-control" min="1" placeholder="0" style="font-size:20px;font-weight:700;" />
+                     </div>
+                     <div class="form-text">หน่วย: <span id="recv-unit">—</span></div>
+                   </div>
                   <div class="form-group">
                     <label class="form-label">หมายเหตุ</label>
                     <textarea id="recv-remarks" class="form-control" rows="3" placeholder="แหล่งที่รับมา, เลขที่ PO, ฯลฯ"></textarea>
@@ -252,6 +258,7 @@ function selectItem(item) {
   document.getElementById('form-placeholder').style.display   = 'none';
   document.getElementById('receive-form-wrap').style.display  = 'flex';
   document.getElementById('recv-unit').textContent = item.unit;
+  document.getElementById('recv-location-display').innerHTML = getLocationBadge(item.location);
   document.getElementById('recv-qty').focus();
 
   // Selected item info card
@@ -312,6 +319,7 @@ async function confirmReceive() {
       balance_after_transaction: selectedItem.current_stock + qty,
       remarks,
       user_name:        user.full_name,
+      location:         selectedItem.location,
     });
 
     // Show success

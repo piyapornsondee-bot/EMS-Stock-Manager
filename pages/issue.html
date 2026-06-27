@@ -102,15 +102,21 @@
               </div>
               <div class="card-body">
                 <div style="display:flex;flex-direction:column;gap:16px;">
-                  <div class="form-group">
-                    <label class="form-label">จำนวนที่จ่ายออก <span class="required">*</span></label>
-                    <div class="input-group">
-                      <span class="material-symbols-rounded input-icon" style="color:var(--color-danger);">remove_circle</span>
-                      <input type="number" id="issue-qty" class="form-control" min="1" placeholder="0"
-                        style="font-size:20px;font-weight:700;" />
-                    </div>
-                    <div class="form-text">สต๊อกคงเหลือ: <strong id="current-stock-display">—</strong> <span id="issue-unit">—</span></div>
-                  </div>
+                   <div class="form-group">
+                     <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                       <span>จ่ายออกจากสถานที่จัดเก็บ:</span>
+                       <span id="issue-location-display"></span>
+                     </label>
+                   </div>
+                   <div class="form-group">
+                     <label class="form-label">จำนวนที่จ่ายออก <span class="required">*</span></label>
+                     <div class="input-group">
+                       <span class="material-symbols-rounded input-icon" style="color:var(--color-danger);">remove_circle</span>
+                       <input type="number" id="issue-qty" class="form-control" min="1" placeholder="0"
+                         style="font-size:20px;font-weight:700;" />
+                     </div>
+                     <div class="form-text">สต๊อกคงเหลือ: <strong id="current-stock-display">—</strong> <span id="issue-unit">—</span></div>
+                   </div>
                   <div class="form-group">
                     <label class="form-label">หมายเหตุ</label>
                     <textarea id="issue-remarks" class="form-control" rows="3" placeholder="ผู้รับ, วัตถุประสงค์, ผู้ป่วย (ไม่ระบุชื่อ), ฯลฯ"></textarea>
@@ -247,6 +253,7 @@ function selectItem(item) {
   document.getElementById('issue-form-wrap').style.display   = 'flex';
   document.getElementById('issue-unit').textContent          = item.unit;
   document.getElementById('current-stock-display').textContent = item.current_stock;
+  document.getElementById('issue-location-display').innerHTML = getLocationBadge(item.location);
   document.getElementById('stock-warning').style.display    = 'none';
   document.getElementById('issue-qty').focus();
 
@@ -320,6 +327,7 @@ async function confirmIssue() {
       balance_after_transaction: selectedItem.current_stock - qty,
       remarks,
       user_name: user.full_name,
+      location: selectedItem.location,
     });
 
     document.getElementById('success-msg').textContent = `จ่าย "${selectedItem.item_name}" ออกจากคลังสำเร็จ`;
