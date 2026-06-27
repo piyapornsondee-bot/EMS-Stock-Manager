@@ -324,7 +324,7 @@ function applyFilters() {
     const matchCat  = !catFilter  || item.category === catFilter;
     const matchLoc  = !locFilter  || item.location === locFilter;
     let matchStock = true;
-    if (stockFilter === 'low')    matchStock = item.current_stock > 0 && item.current_stock <= item.minimum_stock;
+    if (stockFilter === 'low')    matchStock = item.current_stock <= item.minimum_stock;
     if (stockFilter === 'empty')  matchStock = item.current_stock === 0;
     if (stockFilter === 'normal') matchStock = item.current_stock > item.minimum_stock;
     return matchSearch && matchCat && matchLoc && matchStock;
