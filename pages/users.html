@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
@@ -210,10 +210,10 @@
           <td>${statusBadge}</td>
           <td style="text-align:right;">
             <div style="display:inline-flex;gap:6px;">
-              <button class="btn btn-sm btn-outline" onclick="window._editUser(${u.user_id})">
+              <button class="btn btn-sm btn-outline" onclick="window._editUser('${u.user_id}')">
                 <span class="material-symbols-rounded" style="font-size:14px;">edit</span> แก้ไข
               </button>
-              <button class="btn btn-sm btn-danger-outline" onclick="window._deleteUser(${u.user_id}, '${u.email}')" ${u.email === 'admin@ems.local' ? 'disabled' : ''}>
+              <button class="btn btn-sm btn-danger-outline" onclick="window._deleteUser('${u.user_id}', '${u.email}')" ${u.email === 'admin@ems.local' ? 'disabled' : ''}>
                 <span class="material-symbols-rounded" style="font-size:14px;">delete</span> ลบ
               </button>
             </div>
@@ -353,7 +353,7 @@
     try {
       if (id) {
         // Edit User
-        const existing = allUsers.find(u => u.user_id === parseInt(id));
+        const existing = allUsers.find(u => u.user_id.toString() === id.toString());
         if (!existing) throw new Error('ไม่พบข้อมูลผู้ใช้');
 
         existing.full_name = name;

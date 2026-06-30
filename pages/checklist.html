@@ -290,7 +290,7 @@
         ? '<span class="badge badge-success">ผ่านปกติ</span>'
         : '<span class="badge badge-danger">พบปัญหา</span>';
       return `
-        <div onclick="window._viewChecklistDetails(${c.checklist_id})"
+        <div onclick="window._viewChecklistDetails('${c.checklist_id}')"
           style="padding:14px 20px;border-bottom:1px solid var(--border-light);cursor:pointer;transition:background 0.15s;display:flex;align-items:center;justify-content:space-between;gap:12px;">
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
@@ -308,7 +308,7 @@
 
   window._viewChecklistDetails = async function(id) {
     const list = await getAllChecklists();
-    const c = list.find(chk => chk.checklist_id === id);
+    const c = list.find(chk => chk.checklist_id.toString() === id.toString());
     if (!c) return;
 
     const modalBody = document.getElementById('detail-modal-body');
