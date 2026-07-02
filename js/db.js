@@ -83,6 +83,29 @@ const OFFICE_SEED_ITEMS = [
   { barcode: 'EMS191', qr_code: 'EMS191', item_name: 'ที่เจาะกระดาษ 2 รู ขนาดเล็ก', category: 'Office', subcategory: 'Office Supplies', unit: 'เครื่อง', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' }
 ];
 
+const HOUSEKEEPING_SEED_ITEMS = [
+  { barcode: 'EMS192', qr_code: 'EMS192', item_name: 'กระดาษชำระ ม้วนเล็ก', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'ม้วน', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS193', qr_code: 'EMS193', item_name: 'กระดาษชำระม้วนใหญ่ (12 ม้วน/หีบ)', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'หีบ', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS194', qr_code: 'EMS194', item_name: 'กระดาษสาสีขาว ขนาดกว้าง 19x22 นิ้ว', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'แผ่น', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS195', qr_code: 'EMS195', item_name: 'กระดาษเช็ดมือแบบแผ่น 250 แผ่น/ห่อ', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'ห่อ', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS196', qr_code: 'EMS196', item_name: 'ถุงพลาสติกมีหูหิ้ว 9x18 นิ้ว (1 ห่อ/100 ใบ)', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'ห่อ', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS197', qr_code: 'EMS197', item_name: 'ถุงพลาสติกมีหูหิ้ว 12x20 นิ้ว (1 ห่อ/100 ใบ)', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'ห่อ', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS198', qr_code: 'EMS198', item_name: 'แบตเตอรี่แห้ง ขนาดกลาง (C)', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'ก้อน', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS199', qr_code: 'EMS199', item_name: 'แบตเตอรี่แห้ง ขนาดใหญ่ (D)', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'ก้อน', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS200', qr_code: 'EMS200', item_name: 'แบตเตอรี่ 9 โวลท์', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'ก้อน', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS201', qr_code: 'EMS201', item_name: 'Battery Alkaline AA', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'ก้อน', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS202', qr_code: 'EMS202', item_name: 'Battery Alkaline AAA', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'ก้อน', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS203', qr_code: 'EMS203', item_name: 'กรวยน้ำกระดาษ 4,500 ใบ/หีบ', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'หีบ', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS204', qr_code: 'EMS204', item_name: 'แผ่นขัดภาชนะใยสังเคราะห์ ขนาดไม่ต่ำกว่า 10x15 ซม', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'แผ่น', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS205', qr_code: 'EMS205', item_name: 'สบู่เหลว ขนาดไม่ต่ำกว่า 200 ซีซี', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'ขวด', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS206', qr_code: 'EMS206', item_name: 'ผงซักฟอก ขนาดไม่ต่ำกว่า 430 กรัม', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'ถุง', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS207', qr_code: 'EMS207', item_name: 'น้ำยาล้างจาน ความจุไม่ต่ำกว่า 800 ซีซี.', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'ขวด', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS208', qr_code: 'EMS208', item_name: 'น้ำยาดับกลิ่นชนิดสเปรย์', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'กระป๋อง', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS209', qr_code: 'EMS209', item_name: 'กระบอกฉีดที่พ่นน้ำรีดผ้า', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'อัน', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS210', qr_code: 'EMS210', item_name: 'ยางรัดของวงเล็ก 1 ถุง/1/2 กก.', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'ถุง', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' },
+  { barcode: 'EMS211', qr_code: 'EMS211', item_name: 'ยางรัดของวงใหญ่ 1 ถุง/ 1/2 กก.', category: 'Housekeeping', subcategory: 'Housekeeping Supplies', unit: 'ถุง', current_stock: 0, minimum_stock: 2, location: 'ห้องเก็บของ EMS', item_image: '' }
+];
+
 /* ── Seed Data ── */
 export async function seedDatabase() {
   const coll = collection(db, 'users');
@@ -131,6 +154,24 @@ export async function seedDatabase() {
     await batch.commit();
     await setSetting('seeded_office_items_v2', true);
     console.log('✅ Database migrated: Office items location updated to "ห้องเก็บของ EMS"');
+  }
+
+  const hkFlag = await getSetting('seeded_housekeeping_items_v1');
+  if (!hkFlag && v3Flag) {
+    const now = new Date().toISOString();
+    const hkItems = HOUSEKEEPING_SEED_ITEMS.map(i => ({
+      ...i,
+      created_date: now,
+      updated_date: now
+    }));
+    const batch = writeBatch(db);
+    for (const item of hkItems) {
+      const docRef = doc(collection(db, 'items'));
+      batch.set(docRef, item);
+    }
+    await batch.commit();
+    await setSetting('seeded_housekeeping_items_v1', true);
+    console.log('✅ Database migrated: Seeded Housekeeping items');
   }
 
   if (v3Flag) return;
@@ -237,7 +278,8 @@ export async function seedDatabase() {
     { barcode: 'EMS99', qr_code: 'EMS99', item_name: 'Thoracic catheter No.36', category: 'Other', subcategory: 'General', unit: 'ชิ้น', current_stock: 0, minimum_stock: 3, location: 'EMS', item_image: '', created_date: now, updated_date: now },
     { barcode: 'EMS100', qr_code: 'EMS100', item_name: 'เครื่องช่วยฟัง', category: 'Other', subcategory: 'General', unit: 'ชิ้น', current_stock: 0, minimum_stock: 3, location: 'EMS', item_image: '', created_date: now, updated_date: now },
     { barcode: 'EMS101', qr_code: 'EMS101', item_name: 'กรรไกรตัดพลาสเตอร์ 22 cm.', category: 'Wound Care', subcategory: 'Dressing', unit: 'ชิ้น', current_stock: 0, minimum_stock: 10, location: 'EMS', item_image: '', created_date: now, updated_date: now },
-    ...OFFICE_SEED_ITEMS.map(i => ({ ...i, created_date: now, updated_date: now }))
+    ...OFFICE_SEED_ITEMS.map(i => ({ ...i, created_date: now, updated_date: now })),
+    ...HOUSEKEEPING_SEED_ITEMS.map(i => ({ ...i, created_date: now, updated_date: now }))
   ];
 
   const batch = writeBatch(db);
@@ -250,6 +292,7 @@ export async function seedDatabase() {
   await setSetting('seeded_v3_firebase', true);
   await setSetting('seeded_office_items_v1', true);
   await setSetting('seeded_office_items_v2', true);
+  await setSetting('seeded_housekeeping_items_v1', true);
   console.log('✅ Database seeded with EMS inventory data (Firebase)');
 }
 

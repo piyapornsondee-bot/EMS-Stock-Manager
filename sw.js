@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ems-stock-v5';
+const CACHE_NAME = 'ems-stock-v6';
 const BASE = '/EMS-Stock-Manager';
 const STATIC_ASSETS = [
   `${BASE}/index.html`,
