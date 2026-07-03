@@ -183,6 +183,10 @@ let selectedItem = null;
 
 async function init() {
   await initApp('รับพัสดุเข้า', 'Receive Stock');
+  // Pre-cache all items for recent receives name lookup
+  const allItemsForCache = await getAllItems();
+  window._allItemsCache = allItemsForCache;
+
   renderRecentReceives();
 
   window.toggleCustomLocation = function(val) {
@@ -264,8 +268,9 @@ async function searchItems(q) {
     return;
   }
   resultsEl.innerHTML = found.map(item => `
-    <div onclick="window._selectItem('${item.item_id}')"
-      style="padding:10px 12px;border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:4px;border:1px solid var(--border-light);transition:background 0.15s;">
+    <div onclick="window._selectItem('${item.barcode}')"
+      style="padding:10px 12px;border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:4px;border:1px solid var(--border-light);transition:background 0.15s;"
+      onmouseover="this.style.background='var(--primary-50)'" onmouseout="this.style.background=''">
       <div style="width:32px;height:32px;background:var(--primary-50);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
         <span class="material-symbols-rounded" style="font-size:16px;color:var(--primary-800);">medication</span>
       </div>
@@ -280,13 +285,15 @@ async function searchItems(q) {
   `).join('');
 }
 
-window._selectItem = async function(id) {
+window._selectItem = async function(barcode) {
   const items = await getAllItems();
-  const item  = items.find(i => i.item_id === id);
+  const item  = items.find(i => i.barcode === barcode);
   if (item) {
     selectItem(item);
     document.getElementById('search-results').innerHTML = '';
     document.getElementById('item-search').value = '';
+  } else {
+    toast.error('ไม่พบรายการ', `ไม่พบพัสดุรหัส "${barcode}" ในระบบ`);
   }
 };
 
@@ -440,18 +447,23 @@ async function renderRecentReceives() {
     el.innerHTML = `<div style="padding:20px;text-align:center;font-size:13px;color:var(--text-muted);">ยังไม่มีรายการ</div>`;
     return;
   }
-  el.innerHTML = receives.map(t => `
+  el.innerHTML = receives.map(t => {
+    const allItemsCache = window._allItemsCache || [];
+    const matchItem = allItemsCache.find(i => i.barcode === t.barcode);
+    const displayName = matchItem?.item_name || t.barcode;
+    return `
     <div style="padding:12px 20px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:10px;">
       <div style="width:32px;height:32px;background:var(--color-success-light);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
         <span class="material-symbols-rounded" style="font-size:16px;color:var(--color-success);">add_circle</span>
       </div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.barcode}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${displayName}">${displayName}</div>
         <div style="font-size:11px;color:var(--text-muted);">${t.user_name} · ${formatDateTime(t.datetime)}</div>
       </div>
       <div style="font-size:14px;font-weight:700;color:var(--color-success);">+${t.quantity}</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 // Responsive layout
