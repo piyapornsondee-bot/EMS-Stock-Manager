@@ -142,11 +142,12 @@
                   style="cursor:pointer;">visibility</span>
               </div>
             </div>
-            <div style="margin-bottom:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
               <label class="checkbox-wrap">
                 <input type="checkbox" id="remember-me" />
                 <span style="font-size:13px;color:var(--text-secondary);">จำฉันไว้</span>
               </label>
+              <a href="#" onclick="switchTab('forgot'); return false;" style="font-size:13px;color:var(--primary-800);text-decoration:none;font-weight:600;">ลืมรหัสผ่าน?</a>
             </div>
             <button type="submit" class="btn btn-primary btn-lg w-full" id="login-btn">
               <span class="material-symbols-rounded">login</span>เข้าสู่ระบบ
@@ -224,6 +225,65 @@
           </form>
         </div>
 
+        <!-- ─── FORGOT PASSWORD PANEL ─── -->
+        <div id="panel-forgot" style="display:none;">
+          <div style="margin-bottom:24px;">
+            <h2 style="font-size:22px;font-weight:800;color:var(--text-primary);margin-bottom:4px;">ลืมรหัสผ่าน?</h2>
+            <p style="color:var(--text-muted);font-size:13px;">กรุณากรอกข้อมูลของคุณเพื่อตรวจสอบสิทธิ์ในการตั้งรหัสผ่านใหม่</p>
+          </div>
+
+          <div id="forgot-error" class="alert alert-danger" style="display:none;margin-bottom:16px;">
+            <span class="material-symbols-rounded">error</span>
+            <span id="forgot-error-text"></span>
+          </div>
+          <div id="forgot-success" class="alert alert-success" style="display:none;margin-bottom:16px;">
+            <span class="material-symbols-rounded">check_circle</span>
+            <span id="forgot-success-text"></span>
+          </div>
+
+          <form id="forgot-form" novalidate>
+            <div class="form-group" style="margin-bottom:18px;">
+              <label class="form-label" for="forgot-email">
+                <span class="material-symbols-rounded" style="font-size:15px;">email</span>อีเมลที่ลงทะเบียน
+              </label>
+              <div class="input-group">
+                <span class="material-symbols-rounded input-icon">alternate_email</span>
+                <input type="email" id="forgot-email" class="form-control" placeholder="yourname@ems.local" required
+                  autocomplete="off" />
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:18px;">
+              <label class="form-label" for="forgot-fullname">
+                <span class="material-symbols-rounded" style="font-size:15px;">badge</span>ชื่อ-นามสกุลจริง
+              </label>
+              <div class="input-group">
+                <span class="material-symbols-rounded input-icon">person</span>
+                <input type="text" id="forgot-fullname" class="form-control" placeholder="เช่น นายสมชาย ดีใจ" required
+                  autocomplete="off" />
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:24px;">
+              <label class="form-label" for="forgot-password">
+                <span class="material-symbols-rounded" style="font-size:15px;">lock</span>ตั้งรหัสผ่านใหม่
+              </label>
+              <div class="input-group">
+                <span class="material-symbols-rounded input-icon">lock_outline</span>
+                <input type="password" id="forgot-password" class="form-control" placeholder="อย่างน้อย 6 ตัวอักษร" required
+                  autocomplete="new-password" />
+              </div>
+            </div>
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <button type="button" class="btn btn-secondary btn-lg" onclick="switchTab('login')">
+                ยกเลิก
+              </button>
+              <button type="submit" class="btn btn-primary btn-lg" id="forgot-btn">
+                <span class="material-symbols-rounded">lock_reset</span>รีเซ็ต
+              </button>
+            </div>
+          </form>
+        </div>
+
         <p style="text-align:center;font-size:12px;color:var(--text-muted);margin-top:24px;">
           EMS Stock Manager v1.0 &nbsp;|&nbsp; Medical Inventory System
         </p>
@@ -236,7 +296,7 @@
 
   <script type="module">
     import { login, isLoggedIn } from './js/auth.js';
-    import { openDB, seedDatabase, getUserByEmail, dbAdd } from './js/db.js';
+    import { openDB, seedDatabase, getUserByEmail, dbAdd, saveUser } from './js/db.js';
     import { toast } from './js/notifications.js';
 
     // Theme check
@@ -273,21 +333,39 @@
     // ── Tab switcher ──
     window.switchTab = function (tab) {
       const isLogin = tab === 'login';
+      const isRegister = tab === 'register';
+      const isForgot = tab === 'forgot';
+
       document.getElementById('panel-login').style.display = isLogin ? 'block' : 'none';
-      document.getElementById('panel-register').style.display = isLogin ? 'none' : 'block';
+      document.getElementById('panel-register').style.display = isRegister ? 'block' : 'none';
+      document.getElementById('panel-forgot').style.display = isForgot ? 'block' : 'none';
+
       // Active tab styling
       const tLogin = document.getElementById('tab-login');
       const tReg = document.getElementById('tab-register');
-      tLogin.style.background = isLogin ? 'white' : 'transparent';
-      tLogin.style.color = isLogin ? 'var(--primary-800)' : 'var(--text-muted)';
-      tLogin.style.boxShadow = isLogin ? 'var(--shadow-sm)' : 'none';
-      tReg.style.background = isLogin ? 'transparent' : 'white';
-      tReg.style.color = isLogin ? 'var(--text-muted)' : 'var(--color-success)';
-      tReg.style.boxShadow = isLogin ? 'none' : 'var(--shadow-sm)';
+
+      if (isForgot) {
+        tLogin.style.background = 'transparent';
+        tLogin.style.color = 'var(--text-muted)';
+        tLogin.style.boxShadow = 'none';
+        tReg.style.background = 'transparent';
+        tReg.style.color = 'var(--text-muted)';
+        tReg.style.boxShadow = 'none';
+      } else {
+        tLogin.style.background = isLogin ? 'white' : 'transparent';
+        tLogin.style.color = isLogin ? 'var(--primary-800)' : 'var(--text-muted)';
+        tLogin.style.boxShadow = isLogin ? 'var(--shadow-sm)' : 'none';
+        tReg.style.background = isRegister ? 'white' : 'transparent';
+        tReg.style.color = isRegister ? 'var(--color-success)' : 'var(--text-muted)';
+        tReg.style.boxShadow = isRegister ? 'var(--shadow-sm)' : 'none';
+      }
+
       // Clear alerts
       document.getElementById('login-error').style.display = 'none';
       document.getElementById('reg-error').style.display = 'none';
       document.getElementById('reg-success').style.display = 'none';
+      document.getElementById('forgot-error').style.display = 'none';
+      document.getElementById('forgot-success').style.display = 'none';
     };
 
     // Toggle login password
@@ -416,6 +494,91 @@
         errEl.style.display = 'flex';
         btn.disabled = false;
         btn.innerHTML = '<span class="material-symbols-rounded">person_add</span> สมัครสมาชิก';
+      }
+    });
+    // ── Forgot password form ──
+    document.getElementById('forgot-form')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+      const fullname = document.getElementById('forgot-fullname').value.trim();
+      const password = document.getElementById('forgot-password').value;
+      const btn = document.getElementById('forgot-btn');
+      const errEl = document.getElementById('forgot-error');
+      const errText = document.getElementById('forgot-error-text');
+      const successEl = document.getElementById('forgot-success');
+      const successTx = document.getElementById('forgot-success-text');
+
+      errEl.style.display = 'none';
+      successEl.style.display = 'none';
+
+      if (!email || !fullname || !password) {
+        errText.textContent = 'กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง';
+        errEl.style.display = 'flex';
+        return;
+      }
+
+      if (password.length < 6) {
+        errText.textContent = 'รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 6 ตัวอักษร';
+        errEl.style.display = 'flex';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> กำลังรีเซ็ตรหัสผ่าน...';
+
+      try {
+        const user = await getUserByEmail(email);
+        if (!user) {
+          throw new Error('ไม่พบข้อมูลอีเมลนี้ในระบบ');
+        }
+
+        if (!user.active) {
+          throw new Error('บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ');
+        }
+
+        // Validate full name (normalize whitespace and case)
+        const normalize = str => str.toLowerCase().replace(/\s+/g, ' ').trim();
+        if (normalize(user.full_name) !== normalize(fullname)) {
+          throw new Error('ชื่อ-นามสกุลไม่ตรงกับชื่อผู้ใช้ที่ระบุไว้ในระบบ');
+        }
+
+        // Update password
+        user.password = password;
+        await saveUser(user);
+
+        // Audit Log
+        await dbAdd('transactions', {
+          datetime: new Date().toISOString(),
+          item_id: null,
+          barcode: null,
+          transaction_type: 'Password Reset',
+          quantity: null,
+          balance_after_transaction: null,
+          remarks: `รีเซ็ตรหัสผ่านผ่านฟังก์ชันลืมรหัสผ่านสำหรับ: ${email}`,
+          user_name: user.full_name
+        }).catch(() => {});
+
+        // Show success
+        document.getElementById('forgot-form').reset();
+        successTx.textContent = 'รีเซ็ตรหัสผ่านใหม่เรียบร้อยแล้ว! กำลังพากลับไปยังหน้าลงชื่อเข้าใช้...';
+        successEl.style.display = 'flex';
+
+        setTimeout(() => {
+          switchTab('login');
+          document.getElementById('login-email').value = email;
+          document.getElementById('login-password').value = '';
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-rounded">lock_reset</span> รีเซ็ต';
+        }, 2000);
+
+      } catch (err) {
+        errText.textContent = err.message;
+        errEl.style.display = 'flex';
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-rounded">lock_reset</span> รีเซ็ต';
+        const form = document.getElementById('forgot-form');
+        form.style.animation = 'none';
+        setTimeout(() => { form.style.animation = 'shake 0.4s ease'; }, 10);
       }
     });
 
