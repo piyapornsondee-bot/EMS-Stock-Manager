@@ -35,7 +35,7 @@ const NAV_ITEMS = [
   { id: 'users',        label: 'จัดการผู้ใช้',          icon: 'manage_accounts',  href: 'users.html',        permission: 'manage_users' },
   { id: 'settings',     label: 'ตั้งค่า',              icon: 'settings',         href: 'settings.html',     permission: 'manage_users' },
   { id: 'manual',       label: 'คู่มือการใช้งาน',      icon: 'menu_book',        href: 'manual.html',       permission: null },
-];
+]; // navigation items definition
 
 /* ── Render sidebar ── */
 function renderSidebar(user, lowCount) {
