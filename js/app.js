@@ -17,7 +17,6 @@ const PAGE = (() => {
   if (p.includes('issue'))        return 'issue';
   if (p.includes('transactions')) return 'transactions';
   if (p.includes('reports'))      return 'reports';
-  if (p.includes('checklist'))    return 'checklist';
   if (p.includes('users'))        return 'users';
   if (p.includes('settings'))     return 'settings';
   if (p.includes('manual'))        return 'manual';
