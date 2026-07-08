@@ -356,7 +356,7 @@ export async function deleteItem(id) {
 
 export async function getLowStockItems() {
   const all = await getAllItems();
-  return all.filter(i => i.current_stock <= i.minimum_stock);
+  return all.filter(i => i.current_stock < i.minimum_stock || i.current_stock === 0);
 }
 
 /* ── Transaction Helpers ── */

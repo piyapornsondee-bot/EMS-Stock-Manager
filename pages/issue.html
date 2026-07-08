@@ -338,7 +338,7 @@ async function searchItems(q) {
           <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${item.item_name}</div>
           <div style="font-size:11px;color:var(--text-muted);">${item.barcode}</div>
         </div>
-        <span class="badge ${isEmpty ? 'badge-danger' : item.current_stock <= item.minimum_stock ? 'badge-warning' : 'badge-success'}">
+        <span class="badge ${item.current_stock === 0 ? 'badge-danger' : item.current_stock < item.minimum_stock ? 'badge-warning' : 'badge-success'}">
           ${item.current_stock} ${item.unit}
         </span>
       </div>
@@ -393,7 +393,7 @@ function selectItem(item) {
   // Render selected item card
   const allForBarcode = allItems.filter(i => i.barcode === item.barcode);
   const totalStock = allForBarcode.reduce((s, i) => s + (i.current_stock || 0), 0);
-  const level = item.current_stock <= item.minimum_stock ? 'low' : 'high';
+  const level = item.current_stock === 0 ? 'empty' : item.current_stock < item.minimum_stock ? 'low' : 'high';
   document.getElementById('selected-item-card').innerHTML = `
     <div class="card-body">
       <div style="display:flex;gap:16px;align-items:center;">
@@ -530,7 +530,7 @@ async function confirmIssue() {
       </div>
       <div style="display:flex;justify-content:space-between;">
         <span style="color:var(--text-muted);">สต๊อกหลัง:</span>
-        <strong style="color:${sourceItem.current_stock - qty <= selectedItem.minimum_stock ? 'var(--color-danger)' : 'var(--primary-800)'};">${sourceItem.current_stock - qty} ${selectedItem.unit}</strong>
+        <strong style="color:${(sourceItem.current_stock - qty) <= 0 ? 'var(--color-danger)' : (sourceItem.current_stock - qty) < selectedItem.minimum_stock ? 'var(--color-warning)' : 'var(--color-success)'};">${sourceItem.current_stock - qty} ${selectedItem.unit}</strong>
       </div>
     `;
 

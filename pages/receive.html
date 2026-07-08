@@ -278,7 +278,7 @@ async function searchItems(q) {
         <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${item.item_name}</div>
         <div style="font-size:11px;color:var(--text-muted);">${item.barcode} | สต๊อก: ${item.current_stock} ${item.unit}</div>
       </div>
-      <span class="badge ${item.current_stock <= item.minimum_stock ? 'badge-warning' : 'badge-success'}">
+      <span class="badge ${item.current_stock === 0 ? 'badge-danger' : item.current_stock < item.minimum_stock ? 'badge-warning' : 'badge-success'}">
         ${item.current_stock} ${item.unit}
       </span>
     </div>
@@ -334,7 +334,7 @@ function selectItem(item) {
 
   // Selected item info card
   const card = document.getElementById('selected-item-card');
-  const level = item.current_stock <= item.minimum_stock ? 'low' : 'high';
+  const level = item.current_stock === 0 ? 'empty' : item.current_stock < item.minimum_stock ? 'low' : 'high';
   card.innerHTML = `
     <div class="card-body">
       <div style="display:flex;gap:16px;align-items:center;">
@@ -349,7 +349,7 @@ function selectItem(item) {
           </div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:24px;font-weight:800;color:${level==='low'?'var(--color-warning)':'var(--color-success)'};">${item.current_stock}</div>
+          <div style="font-size:24px;font-weight:800;color:${level==='empty'?'var(--color-danger)':level==='low'?'var(--color-warning)':'var(--color-success)'};">${item.current_stock}</div>
           <div style="font-size:11px;color:var(--text-muted);">/ ${item.minimum_stock} ${item.unit}<br>สต๊อกปัจจุบัน</div>
         </div>
       </div>

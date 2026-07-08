@@ -339,9 +339,9 @@ function applyFilters() {
         ? (item.location !== 'ห้องเก็บของ EMS' && item.location !== 'บ้านเมิร์ส') 
         : item.location === locFilter);
     let matchStock = true;
-    if (stockFilter === 'low')    matchStock = item.current_stock <= item.minimum_stock;
+    if (stockFilter === 'low')    matchStock = item.current_stock < item.minimum_stock && item.current_stock > 0;
     if (stockFilter === 'empty')  matchStock = item.current_stock === 0;
-    if (stockFilter === 'normal') matchStock = item.current_stock > item.minimum_stock;
+    if (stockFilter === 'normal') matchStock = item.current_stock >= item.minimum_stock;
     return matchSearch && matchCat && matchLoc && matchStock;
   });
 
@@ -360,8 +360,7 @@ function setView(v) {
 
 function getStockLevel(item) {
   if (item.current_stock === 0) return 'empty';
-  if (item.current_stock <= item.minimum_stock) return 'low';
-  if (item.current_stock <= item.minimum_stock * 1.5) return 'medium';
+  if (item.current_stock < item.minimum_stock) return 'low';
   return 'high';
 }
 
@@ -527,7 +526,7 @@ function renderItemCard(item) {
             </div>
           </div>
           <div class="stock-bar" style="margin-top:4px;">
-            <div class="stock-bar-fill ${level === 'high' ? 'high' : level === 'medium' ? 'medium' : 'low'}" style="width:${pct}%;"></div>
+            <div class="stock-bar-fill ${level === 'high' ? 'high' : level === 'low' ? 'medium' : 'low'}" style="width:${pct}%;"></div>
           </div>
         </div>
       </div>

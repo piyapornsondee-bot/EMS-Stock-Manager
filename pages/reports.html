@@ -271,14 +271,14 @@
           <div class="stat-icon amber"><span class="material-symbols-rounded">warning</span></div>
           <div class="stat-info">
             <div class="stat-value" id="kpi-near-min">0</div>
-            <div class="stat-label">รายการใกล้ถึงขั้นต่ำ</div>
+            <div class="stat-label">รายการสต๊อกต่ำ</div>
           </div>
         </div>
         <div class="stat-card" style="background: rgba(198,40,40,0.03);">
           <div class="stat-icon red" style="background: var(--color-danger-light); color: var(--color-danger);"><span class="material-symbols-rounded">dangerous</span></div>
           <div class="stat-info">
             <div class="stat-value" id="kpi-below-min" style="color: var(--color-danger);">0</div>
-            <div class="stat-label">รายการต่ำกว่าขั้นต่ำ</div>
+            <div class="stat-label">รายการหมดสต๊อก</div>
           </div>
         </div>
       </div>
@@ -501,11 +501,11 @@
     </div>
     <div class="print-card">
       <div class="print-card-val" id="print-kpi-near">-</div>
-      <div class="print-card-lbl">ใกล้ถึงขั้นต่ำ (รายการ)</div>
+      <div class="print-card-lbl">สต๊อกต่ำ (รายการ)</div>
     </div>
     <div class="print-card" style="border-color:#C62828;">
       <div class="print-card-val" id="print-kpi-below" style="color:#C62828;">-</div>
-      <div class="print-card-lbl">ต่ำกว่าขั้นต่ำ (รายการ)</div>
+      <div class="print-card-lbl">หมดสต๊อก (รายการ)</div>
     </div>
   </div>
 
@@ -838,17 +838,16 @@ function renderSummaryCards() {
     .reduce((sum, t) => sum + Number(t.quantity || 0), 0);
   document.getElementById('kpi-total-issue').textContent = formatNumber(totalIssue);
 
-  // Card 4: Near Minimum Stock Count (current_stock <= minimum_stock * 1.5 && current_stock >= minimum_stock)
+  // Card 4: Low Stock Count (0 < current_stock < minimum_stock)
   const nearMinCount = allItems.filter(i => 
-    i.minimum_stock > 0 && 
-    i.current_stock <= i.minimum_stock * 1.5 && 
-    i.current_stock >= i.minimum_stock
+    i.current_stock < i.minimum_stock && 
+    i.current_stock > 0
   ).length;
   document.getElementById('kpi-near-min').textContent = formatNumber(nearMinCount);
 
-  // Card 5: Below Minimum Stock Count (current_stock < minimum_stock)
+  // Card 5: Out of Stock Count (current_stock === 0)
   const belowMinCount = allItems.filter(i => 
-    i.current_stock < i.minimum_stock
+    i.current_stock === 0
   ).length;
   document.getElementById('kpi-below-min').textContent = formatNumber(belowMinCount);
 }
@@ -1252,8 +1251,8 @@ function renderLowStockTable() {
   const tbody = document.querySelector('#low-stock-table tbody');
   tbody.innerHTML = '';
 
-  // Filter low stock items: remaining <= min_stock
-  const lowItems = allItems.filter(i => i.current_stock <= i.minimum_stock);
+  // Filter low stock items: remaining < min_stock or remaining === 0
+  const lowItems = allItems.filter(i => i.current_stock < i.minimum_stock || i.current_stock === 0);
 
   if (lowItems.length === 0) {
     tbody.innerHTML = `
@@ -1281,16 +1280,16 @@ function renderLowStockTable() {
     tr.style.cursor = 'pointer';
     tr.addEventListener('click', () => selectAnalysisItemByBarcode(item.barcode));
 
-    // Status: Red (< min), Yellow (>= min and <= 1.5 * min), Green (> 1.5 * min)
+    // Status: Red (=== 0), Yellow (< min), Green (>= min)
     let statusClass = 'badge-success';
     let statusText = 'ปกติ';
     
-    if (item.current_stock < item.minimum_stock) {
+    if (item.current_stock === 0) {
       statusClass = 'badge-danger';
-      statusText = 'ต่ำกว่าขั้นต่ำ';
-    } else if (item.current_stock <= item.minimum_stock * 1.5) {
+      statusText = 'หมดสต๊อก';
+    } else if (item.current_stock < item.minimum_stock) {
       statusClass = 'badge-warning';
-      statusText = 'ใกล้หมดคลัง';
+      statusText = 'ต่ำกว่าขั้นต่ำ';
     }
 
     const qrCellId = `qrtable-${item.barcode}`;
@@ -1362,7 +1361,7 @@ function searchAnalysisItems(val) {
           <div style="font-size:13px; font-weight:700; color:var(--text-primary);">${i.item_name}</div>
           <div style="font-size:11px; color:var(--text-muted);">${i.barcode} | คลัง: ${i.location}</div>
         </div>
-        <span class="badge ${i.current_stock <= i.minimum_stock ? 'badge-warning' : 'badge-success'}">
+        <span class="badge ${i.current_stock === 0 ? 'badge-danger' : i.current_stock < i.minimum_stock ? 'badge-warning' : 'badge-success'}">
           ${i.current_stock} ${i.unit}
         </span>
       </div>
@@ -1449,7 +1448,7 @@ function displayItemAnalysis(item) {
     
     // Days until we hit minimum stock (which triggers purchase)
     let reorderDaysStr = '';
-    if (item.current_stock <= item.minimum_stock) {
+    if (item.current_stock < item.minimum_stock || item.current_stock === 0) {
       reorderDaysStr = `<span style="color:var(--color-danger); font-weight:800;">สั่งเบิกด่วน (ต่ำกว่าเกณฑ์)</span>`;
     } else {
       const daysToMin = (item.current_stock - item.minimum_stock) / dailyAvg;
@@ -1543,8 +1542,8 @@ function doExportExcel() {
   const totalIssue = filteredTransactions
     .filter(t => t.transaction_type === 'Issue')
     .reduce((sum, t) => sum + Number(t.quantity || 0), 0);
-  const nearMin = allItems.filter(i => i.minimum_stock > 0 && i.current_stock <= i.minimum_stock * 1.5 && i.current_stock >= i.minimum_stock).length;
-  const belowMin = allItems.filter(i => i.current_stock < i.minimum_stock).length;
+  const nearMin = allItems.filter(i => i.current_stock < i.minimum_stock && i.current_stock > 0).length;
+  const belowMin = allItems.filter(i => i.current_stock === 0).length;
 
   // Compute executive metrics
   const avgDaily = totalIssue / diffDays;
@@ -1584,8 +1583,8 @@ function doExportExcel() {
     { 'หัวข้อ': 'พัสดุทั้งหมดในระบบ (รายการ)', 'ค่า': allItems.length },
     { 'หัวข้อ': 'จำนวนรับเข้าพัสดุรวม (หน่วย)', 'ค่า': totalRecv },
     { 'หัวข้อ': 'จำนวนเบิกออกพัสดุรวม (หน่วย)', 'ค่า': totalIssue },
-    { 'หัวข้อ': 'พัสดุใกล้ถึงเกณฑ์ขั้นต่ำ (รายการ)', 'ค่า': nearMin },
-    { 'หัวข้อ': 'พัสดุต่ำกว่าเกณฑ์ขั้นต่ำ (รายการ)', 'ค่า': belowMin },
+    { 'หัวข้อ': 'พัสดุสต๊อกต่ำ (รายการ)', 'ค่า': nearMin },
+    { 'หัวข้อ': 'พัสดุหมดสต๊อก (รายการ)', 'ค่า': belowMin },
     { 'หัวข้อ': '', 'ค่า': '' },
     { 'หัวข้อ': '── Executive Metrics ──', 'ค่า': '' },
     { 'หัวข้อ': 'ความต้องการเฉลี่ยรายวัน (หน่วย/วัน)', 'ค่า': avgDaily.toFixed(2) },
@@ -1604,11 +1603,11 @@ function doExportExcel() {
   }));
 
   // ── Sheet 3: Low Stock Alerts ──
-  const lowItems = allItems.filter(i => i.current_stock <= i.minimum_stock * 1.5).sort((a, b) => a.current_stock - b.current_stock);
+  const lowItems = allItems.filter(i => i.current_stock < i.minimum_stock || i.current_stock === 0).sort((a, b) => a.current_stock - b.current_stock);
   const lowStockData = lowItems.map(item => {
     let statusText = 'ปกติ';
-    if (item.current_stock < item.minimum_stock) statusText = 'ต่ำกว่าเกณฑ์ขั้นต่ำ';
-    else if (item.current_stock <= item.minimum_stock * 1.5) statusText = 'ใกล้หมดคลัง';
+    if (item.current_stock === 0) statusText = 'หมดสต๊อก';
+    else if (item.current_stock < item.minimum_stock) statusText = 'ต่ำกว่าเกณฑ์ขั้นต่ำ';
     return {
       'รหัสพัสดุ': item.barcode,
       'ชื่อพัสดุ': item.item_name,
@@ -1657,8 +1656,8 @@ function doExportExcel() {
   // ── Sheet 7: All Inventory Snapshot ──
   const allInventoryData = allItems.map(item => {
     let stockStatus = 'ปกติ';
-    if (item.current_stock < item.minimum_stock) stockStatus = 'ต่ำกว่าขั้นต่ำ';
-    else if (item.current_stock <= item.minimum_stock * 1.5) stockStatus = 'ใกล้หมดคลัง';
+    if (item.current_stock === 0) stockStatus = 'หมดสต๊อก';
+    else if (item.current_stock < item.minimum_stock) stockStatus = 'ต่ำกว่าขั้นต่ำ';
     const isDead = !activeIssueBarcodes.has(item.barcode) && item.current_stock > 0;
     return {
       'รหัสพัสดุ': item.barcode,
@@ -1750,8 +1749,8 @@ async function doExportPDF() {
   // ── Section 1: KPI Summary Cards ──
   const totalRecv = filteredTransactions.filter(t => t.transaction_type === 'Receive').reduce((sum, t) => sum + Number(t.quantity || 0), 0);
   const totalIssue = filteredTransactions.filter(t => t.transaction_type === 'Issue').reduce((sum, t) => sum + Number(t.quantity || 0), 0);
-  const nearMinCount = allItems.filter(i => i.minimum_stock > 0 && i.current_stock <= i.minimum_stock * 1.5 && i.current_stock >= i.minimum_stock).length;
-  const belowMinCount = allItems.filter(i => i.current_stock < i.minimum_stock).length;
+  const nearMinCount = allItems.filter(i => i.current_stock < i.minimum_stock && i.current_stock > 0).length;
+  const belowMinCount = allItems.filter(i => i.current_stock === 0).length;
   document.getElementById('print-kpi-total').textContent = formatNumber(allItems.length);
   document.getElementById('print-kpi-recv').textContent = formatNumber(totalRecv);
   document.getElementById('print-kpi-issue').textContent = formatNumber(totalIssue);
@@ -1811,12 +1810,12 @@ async function doExportPDF() {
     : '<tr><td colspan="6" style="text-align:center;">ไม่มีข้อมูลการเบิก</td></tr>';
 
   // ── Section 6: Low Stock Table ──
-  const lowItemsAll = allItems.filter(i => i.current_stock <= i.minimum_stock * 1.5).sort((a, b) => a.current_stock - b.current_stock);
+  const lowItemsAll = allItems.filter(i => i.current_stock < i.minimum_stock || i.current_stock === 0).sort((a, b) => a.current_stock - b.current_stock);
   const lowTbody = document.querySelector('#print-lowstock-table tbody');
   lowTbody.innerHTML = lowItemsAll.length
     ? lowItemsAll.map(i => {
-        const statusText = i.current_stock < i.minimum_stock ? 'ต่ำกว่าขั้นต่ำ' : 'ใกล้หมดคลัง';
-        const color = i.current_stock < i.minimum_stock ? '#C62828' : '#E65100';
+        const statusText = i.current_stock === 0 ? 'หมดสต๊อก' : 'ต่ำกว่าขั้นต่ำ';
+        const color = i.current_stock === 0 ? '#C62828' : '#E65100';
         return `<tr>
           <td style="font-family:monospace;font-size:10px;">${i.barcode}</td>
           <td style="font-weight:600;">${i.item_name}</td>
@@ -1858,8 +1857,8 @@ async function doExportPDF() {
   const sortedInventory = [...allItems].sort((a, b) => a.item_name.localeCompare(b.item_name, 'th'));
   invTbody.innerHTML = sortedInventory.map((item, idx) => {
     let statusText = 'ปกติ'; let statusColor = '#2E7D32';
-    if (item.current_stock < item.minimum_stock) { statusText = 'ต่ำกว่าขั้นต่ำ'; statusColor = '#C62828'; }
-    else if (item.current_stock <= item.minimum_stock * 1.5) { statusText = 'ใกล้หมดคลัง'; statusColor = '#E65100'; }
+    if (item.current_stock === 0) { statusText = 'หมดสต๊อก'; statusColor = '#C62828'; }
+    else if (item.current_stock < item.minimum_stock) { statusText = 'ต่ำกว่าขั้นต่ำ'; statusColor = '#E65100'; }
     return `<tr>
       <td>${idx + 1}</td>
       <td style="font-weight:600;">${item.item_name}</td>
@@ -1898,7 +1897,7 @@ async function doExportPDF() {
       ['ใช้เฉลี่ยรายสัปดาห์', dailyAvgItem > 0 ? `${(dailyAvgItem * 7).toFixed(2)} ${item.unit}/สัปดาห์` : '-'],
       ['ใช้เฉลี่ยรายเดือน', dailyAvgItem > 0 ? `${(dailyAvgItem * 30).toFixed(2)} ${item.unit}/เดือน` : '-'],
       ['คาดว่าจะใช้ได้อีก', daysLeftItem !== null ? `${daysLeftItem} วัน` : 'ไม่มีการเบิกใช้'],
-      ['วันที่ควรสั่งเบิก (Reorder Date)', reorderDate || (item.current_stock <= item.minimum_stock ? 'สั่งเบิกด่วน (สต๊อกต่ำกว่าขั้นต่ำ)' : '-')]
+      ['วันที่ควรสั่งเบิก (Reorder Date)', reorderDate || (item.current_stock < item.minimum_stock || item.current_stock === 0 ? 'สั่งเบิกด่วน (สต๊อกต่ำกว่าขั้นต่ำ)' : '-')]
     ].map(([k, v]) => `<tr><td style="font-weight:600;">${k}</td><td>${v}</td></tr>`).join('');
     // Item chart image
     const itemImg = document.getElementById('print-item-chart-img');
