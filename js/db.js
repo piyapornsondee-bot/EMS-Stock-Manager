@@ -333,6 +333,26 @@ export async function getItemByBarcode(barcode) {
   return null;
 }
 
+export function getNextBarcode(items = []) {
+  let maxNum = 0;
+  let hasHyphen = false;
+  for (const item of items) {
+    const code = (item.barcode || item.qr_code || '').trim();
+    const match = code.match(/^EMS(-?)(\d+)$/i);
+    if (match) {
+      const num = parseInt(match[2], 10);
+      if (num > maxNum) {
+        maxNum = num;
+        hasHyphen = match[1] === '-';
+      }
+    }
+  }
+  const nextNum = maxNum + 1;
+  const numStr = String(nextNum).padStart(3, '0');
+  const prefix = hasHyphen ? 'EMS-' : 'EMS';
+  return `${prefix}${numStr}`;
+}
+
 export async function saveItem(item) {
   item.updated_date = new Date().toISOString();
   if (!item.created_date) item.created_date = item.updated_date;

@@ -116,8 +116,10 @@
           <label class="form-label">บาร์โค้ด</label>
           <div class="input-group">
             <span class="material-symbols-rounded input-icon">barcode</span>
-            <input type="text" id="f-barcode" class="form-control" placeholder="EMS-001" />
+            <input type="text" id="f-barcode" class="form-control has-right-icon" placeholder="EMSxxx" />
+            <span class="material-symbols-rounded input-icon-right" id="btn-refresh-barcode" title="รันเลขบาร์โค้ดถัดไป">autorenew</span>
           </div>
+          <span class="form-text" id="f-barcode-hint">รันเลขอัตโนมัติต่อจากเลขล่าสุด (สามารถแก้ไขได้)</span>
         </div>
         <div class="form-group">
           <label class="form-label">หมวดหมู่ <span class="required">*</span></label>
@@ -237,7 +239,7 @@
 
 <script type="module">
 import { initApp, confirmDialog, exportToExcel, getLocationBadge } from '../js/app.js';
-import { getAllItems, saveItem, deleteItem, getLowStockItems } from '../js/db.js';
+import { getAllItems, saveItem, deleteItem, getLowStockItems, getNextBarcode } from '../js/db.js';
 import { generateQR, downloadQR, printQRLabel } from '../js/qrgen.js';
 import { openScanner, closeScanner } from '../js/scanner.js';
 import { toast } from '../js/notifications.js';
@@ -306,6 +308,13 @@ async function init() {
   document.getElementById('modal-save-btn')?.addEventListener('click', saveItemForm);
   document.getElementById('item-modal')?.addEventListener('click', e => {
     if (e.target === document.getElementById('item-modal')) closeModal();
+  });
+
+  document.getElementById('btn-refresh-barcode')?.addEventListener('click', () => {
+    const nextCode = getNextBarcode(allItems);
+    document.getElementById('f-barcode').value = nextCode;
+    const hint = document.getElementById('f-barcode-hint');
+    if (hint) hint.textContent = `รันเลขอัตโนมัติต่อจากเลขล่าสุด (${nextCode}) สามารถแก้ไขได้`;
   });
 
   // Location change
@@ -600,7 +609,26 @@ function openModal(item) {
   editingItem = item;
   document.getElementById('modal-title').textContent = item ? 'แก้ไขรายการพัสดุ' : 'เพิ่มรายการพัสดุ';
   document.getElementById('f-name').value       = item?.item_name || '';
-  document.getElementById('f-barcode').value    = item?.barcode || '';
+
+  const barcodeInput = document.getElementById('f-barcode');
+  const barcodeHint  = document.getElementById('f-barcode-hint');
+  const refreshBtn   = document.getElementById('btn-refresh-barcode');
+
+  if (!item) {
+    // เพิ่มรายการใหม่: รันเลขบาร์โค้ด EMSxxx ต่อจากเลขล่าสุด
+    const nextBarcode = getNextBarcode(allItems);
+    barcodeInput.value = nextBarcode;
+    barcodeInput.placeholder = nextBarcode;
+    if (barcodeHint) barcodeHint.textContent = `รันเลขอัตโนมัติต่อจากเลขล่าสุด (${nextBarcode}) สามารถแก้ไขได้`;
+    if (refreshBtn) refreshBtn.style.display = 'block';
+  } else {
+    // แก้ไขรายการเดิม
+    barcodeInput.value = item.barcode || '';
+    barcodeInput.placeholder = item.barcode || 'EMS001';
+    if (barcodeHint) barcodeHint.textContent = 'รหัสบาร์โค้ด/QR Code ของพัสดุ';
+    if (refreshBtn) refreshBtn.style.display = 'none';
+  }
+
   document.getElementById('f-category').value  = item?.category || '';
   document.getElementById('f-subcategory').value= item?.subcategory || '';
   document.getElementById('f-unit').value       = item?.unit || '';
@@ -652,7 +680,7 @@ async function saveItemForm() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> กำลังบันทึก...';
 
-  const auto_barcode = barcode || `EMS-${String(Date.now()).slice(-4)}`;
+  const auto_barcode = barcode || getNextBarcode(allItems);
   const item = {
     ...(editingItem || {}),
     item_name:     name,
@@ -671,7 +699,7 @@ async function saveItemForm() {
   await loadItems();
   applyFilters();
   closeModal();
-  toast.success('บันทึกสำเร็จ', `${name}`);
+  toast.success('บันทึกสำเร็จ', `${name} (${auto_barcode})`);
 
   btn.disabled = false;
   btn.innerHTML = '<span class="material-symbols-rounded">save</span> บันทึก';
