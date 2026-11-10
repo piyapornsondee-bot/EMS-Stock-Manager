@@ -335,22 +335,15 @@ export async function getItemByBarcode(barcode) {
 
 export function getNextBarcode(items = []) {
   let maxNum = 0;
-  let hasHyphen = false;
   for (const item of items) {
     const code = (item.barcode || item.qr_code || '').trim();
-    const match = code.match(/^EMS(-?)(\d+)$/i);
+    const match = code.match(/^EMS-?(\d+)$/i);
     if (match) {
-      const num = parseInt(match[2], 10);
-      if (num > maxNum) {
-        maxNum = num;
-        hasHyphen = match[1] === '-';
-      }
+      const num = parseInt(match[1], 10);
+      if (num > maxNum) maxNum = num;
     }
   }
-  const nextNum = maxNum + 1;
-  const numStr = String(nextNum).padStart(3, '0');
-  const prefix = hasHyphen ? 'EMS-' : 'EMS';
-  return `${prefix}${numStr}`;
+  return `EMS${maxNum + 1}`;
 }
 
 export async function saveItem(item) {
