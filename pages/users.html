@@ -161,7 +161,7 @@
 <script type="module">
   import { initApp, confirmDialog } from '../js/app.js';
   import { getAllUsers, saveUser, deleteUser, getAllTransactions, dbAdd } from '../js/db.js';
-  import { requireRole } from '../js/auth.js';
+  import { requireRole, getCurrentUser } from '../js/auth.js';
   import { toast, formatDateTime } from '../js/notifications.js';
 
   let allUsers = [];
@@ -202,6 +202,20 @@
       
       const roleBadgeClass = u.role === 'Administrator' ? 'badge-primary' : u.role === 'Staff' ? 'badge-success' : 'badge-neutral';
 
+      const delegated = u.delegated_permissions || [];
+      const hasAddItem = delegated.includes('add_item');
+
+      // ปุ่มมอบ/ถอนอำนาจ เพิ่มพัสดุ — แสดงเฉพาะ Staff/Viewer (Admin มีสิทธิ์อยู่แล้ว)
+      const delegateBtn = u.role !== 'Administrator'
+        ? (hasAddItem
+          ? `<button class="btn btn-sm btn-warning-outline" onclick="window._toggleDelegate('${u.user_id}', false)" title="ถอนสิทธิ์เพิ่มพัสดุ">
+               <span class="material-symbols-rounded" style="font-size:14px;">lock_open</span> ถอนสิทธิ์เพิ่มพัสดุ
+             </button>`
+          : `<button class="btn btn-sm btn-success-outline" onclick="window._toggleDelegate('${u.user_id}', true)" title="มอบสิทธิ์เพิ่มพัสดุ">
+               <span class="material-symbols-rounded" style="font-size:14px;">lock</span> มอบสิทธิ์เพิ่มพัสดุ
+             </button>`)
+        : '';
+
       return `
         <tr>
           <td style="font-weight:700;font-size:13px;">${u.full_name}</td>
@@ -209,7 +223,8 @@
           <td><span class="badge ${roleBadgeClass}">${u.role}</span></td>
           <td>${statusBadge}</td>
           <td style="text-align:right;">
-            <div style="display:inline-flex;gap:6px;">
+            <div style="display:inline-flex;gap:6px;flex-wrap:wrap;">
+              ${delegateBtn}
               <button class="btn btn-sm btn-outline" onclick="window._editUser('${u.user_id}')">
                 <span class="material-symbols-rounded" style="font-size:14px;">edit</span> แก้ไข
               </button>
@@ -228,12 +243,14 @@
     const tbody = document.getElementById('audit-log-body');
     if (!tbody) return;
 
-    // Filter to show Login, Admin adjustments, User edits
+    // Filter to show Login, Admin adjustments, User edits, Permission changes
     const auditLogs = tx.filter(t => t.transaction_type === 'Login' ||
                                      t.transaction_type === 'Adjust' ||
+                                     t.transaction_type === 'Permission Change' ||
                                      t.remarks?.includes('ผู้ใช้') ||
                                      t.remarks?.includes('แก้ไข') ||
-                                     t.remarks?.includes('ลบ')).slice(0, 15);
+                                     t.remarks?.includes('ลบ') ||
+                                     t.remarks?.includes('สิทธิ์')).slice(0, 15);
 
     if (auditLogs.length === 0) {
       tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px;">ยังไม่มีกิจกรรมบันทึกไว้</td></tr>`;
@@ -246,15 +263,22 @@
         badgeType = 'badge-success';
       } else if (l.transaction_type === 'Adjust') {
         badgeType = 'badge-warning';
+      } else if (l.transaction_type === 'Permission Change') {
+        badgeType = 'badge-primary';
       } else if (l.transaction_type === 'Delete' || l.remarks?.includes('ลบ')) {
         badgeType = 'badge-danger';
       }
+
+      const typeLabel = {
+        'Login': 'เข้าสู่ระบบ',
+        'Permission Change': 'เปลี่ยนสิทธิ์',
+      }[l.transaction_type] || l.transaction_type;
 
       return `
         <tr>
           <td style="font-size:11px;color:var(--text-secondary);">${formatDateTime(l.datetime)}</td>
           <td style="font-weight:600;font-size:12px;">${l.user_name}</td>
-          <td><span class="badge ${badgeType}">${l.transaction_type === 'Login' ? 'เข้าสู่ระบบ' : l.transaction_type}</span></td>
+          <td><span class="badge ${badgeType}">${typeLabel}</span></td>
           <td style="font-size:12px;color:var(--text-secondary);">${l.remarks || 'N/A'}</td>
         </tr>
       `;
@@ -320,6 +344,48 @@
         });
 
         toast.success('ลบผู้ใช้สำเร็จ');
+        await reloadUsers();
+        await reloadAuditLogs();
+      } catch (err) {
+        toast.error('เกิดข้อผิดพลาด', err.message);
+      }
+    });
+  };
+
+  window._toggleDelegate = async function(userId, grant) {
+    const user = allUsers.find(u => u.user_id === userId);
+    if (!user) return;
+
+    const actionText = grant ? 'มอบสิทธิ์เพิ่มพัสดุ' : 'ถอนสิทธิ์เพิ่มพัสดุ';
+    const confirmText = grant
+      ? `ต้องการมอบสิทธิ์ "เพิ่มรายการพัสดุ" ให้ "${user.full_name}" ใช่หรือไม่?`
+      : `ต้องการถอนสิทธิ์ "เพิ่มรายการพัสดุ" ของ "${user.full_name}" ใช่หรือไม่?`;
+
+    confirmDialog(confirmText, async () => {
+      try {
+        let delegated = user.delegated_permissions || [];
+        if (grant) {
+          if (!delegated.includes('add_item')) delegated.push('add_item');
+        } else {
+          delegated = delegated.filter(p => p !== 'add_item');
+        }
+        user.delegated_permissions = delegated;
+        await saveUser(user);
+
+        // Audit log
+        const admin = getCurrentUser();
+        await dbAdd('transactions', {
+          datetime: new Date().toISOString(),
+          item_id: null,
+          barcode: null,
+          transaction_type: 'Permission Change',
+          quantity: null,
+          balance_after_transaction: null,
+          remarks: `${actionText}ให้ ${user.full_name} (${user.email})`,
+          user_name: admin?.full_name || 'Admin EMS'
+        });
+
+        toast.success(actionText + 'สำเร็จ', user.full_name);
         await reloadUsers();
         await reloadAuditLogs();
       } catch (err) {

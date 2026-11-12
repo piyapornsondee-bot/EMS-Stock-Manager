@@ -117,6 +117,36 @@
   background: var(--primary-50);
 }
 
+/* Danger Outline */
+.btn-danger-outline {
+  background: transparent;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+.btn-danger-outline:hover {
+  background: rgba(198,40,40,.08);
+}
+
+/* Success Outline */
+.btn-success-outline {
+  background: transparent;
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+.btn-success-outline:hover {
+  background: rgba(46,125,50,.08);
+}
+
+/* Warning Outline */
+.btn-warning-outline {
+  background: transparent;
+  color: #E65100;
+  border-color: #E65100;
+}
+.btn-warning-outline:hover {
+  background: rgba(245,127,23,.08);
+}
+
 /* Ghost */
 .btn-ghost {
   background: transparent;

@@ -34,6 +34,7 @@ export function setSession(user, remember = false) {
     full_name: user.full_name,
     email:     user.email,
     role:      user.role,
+    delegated_permissions: user.delegated_permissions || [],
     login_at:  new Date().toISOString(),
   };
   const store = remember ? localStorage : sessionStorage;
@@ -58,7 +59,8 @@ export function hasPermission(action) {
   const user = getSession();
   if (!user) return false;
   const perms = PERMISSIONS[user.role] || [];
-  return perms.includes(action);
+  const delegated = user.delegated_permissions || [];
+  return perms.includes(action) || delegated.includes(action);
 }
 
 export function requireRole(...roles) {
