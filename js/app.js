@@ -3,7 +3,7 @@
    App shell: sidebar, topbar, navigation, shared init
    ========================================================= */
 
-import { authGuard, getCurrentUser, logout, hasPermission, getInitials, getRoleBadgeClass } from './auth.js';
+import { authGuard, getCurrentUser, refreshCurrentUser, logout, hasPermission, getInitials, getRoleBadgeClass } from './auth.js';
 import { seedDatabase, getLowStockItems } from './db.js';
 import { updateNotifBadge, renderNotifDropdown, checkLowStockAlerts, toast } from './notifications.js';
 import { initAutoSync } from './sync.js';
@@ -264,6 +264,11 @@ export async function initApp(pageTitle, pageSubtitle) {
 
   // All Firebase operations run in background — never block UI
   (async () => {
+    try {
+      await refreshCurrentUser();
+    } catch (e) {
+      console.warn('refreshCurrentUser:', e.message);
+    }
     try {
       await seedDatabase();
     } catch (e) {

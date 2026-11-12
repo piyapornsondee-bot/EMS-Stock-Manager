@@ -55,6 +55,24 @@ export function getCurrentUser() {
   return getSession();
 }
 
+export async function refreshCurrentUser() {
+  const session = getSession();
+  if (!session || !session.email) return session;
+  try {
+    const user = await getUserByEmail(session.email);
+    if (user) {
+      session.delegated_permissions = user.delegated_permissions || [];
+      session.role = user.role;
+      session.full_name = user.full_name;
+      const store = localStorage.getItem(SESSION_KEY) ? localStorage : sessionStorage;
+      store.setItem(SESSION_KEY, JSON.stringify(session));
+    }
+  } catch (e) {
+    console.warn('refreshCurrentUser error:', e);
+  }
+  return session;
+}
+
 export function hasPermission(action) {
   const user = getSession();
   if (!user) return false;

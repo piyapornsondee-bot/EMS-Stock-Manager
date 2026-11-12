@@ -670,6 +670,12 @@ async function saveItemForm() {
   const errEl = document.getElementById('modal-error');
   const errTx = document.getElementById('modal-error-text');
 
+  if (!editingItem && !hasPermission('add_item')) {
+    errTx.textContent = 'คุณไม่ได้รับสิทธิ์ในการเพิ่มรายการพัสดุ (ต้องได้รับมอบอำนาจจากผู้ดูแลระบบ)';
+    errEl.style.display = 'flex';
+    return;
+  }
+
   if (!name || !category || !unit || !location || isNaN(stock) || isNaN(minStock)) {
     errTx.textContent = 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน';
     errEl.style.display = 'flex';
